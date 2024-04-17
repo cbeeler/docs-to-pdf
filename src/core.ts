@@ -8,6 +8,28 @@ import * as utils from './utils';
 
 console_stamp(console);
 
+const headerHasAnId = (header: string) => {
+  return header.match(/id( )*=( )*"/g);
+};
+
+const headerId = (header: string) => {
+  return header.match(/id\s*=\s*"([^"]*)"/)![1];
+};
+
+const basicTextLink = (link: string) => {
+  return !link.includes('class=') &&
+    !link.includes('aria-label=') &&
+    !link.includes('title=')
+};
+
+const linkDestination = (link: string) => {
+  return link.match(/href\s*=\s*"([^"]*)"/)![1];
+};
+
+const localLink = (link: string) => {
+  return link.startsWith('#');
+};
+
 let contentHTML = '';
 export interface GeneratePDFOptions {
   initialDocURLs: Array<string>;
@@ -89,6 +111,8 @@ export async function generatePDF({
     } else request.continue();
   });
 
+  const linksToIds: Record<string, string> = {};
+
   console.debug(`InitialDocURLs: ${initialDocURLs}`);
   for (const url of initialDocURLs) {
     let nextPageURL = url;
@@ -97,6 +121,10 @@ export async function generatePDF({
     // Create a list of HTML for the content section of all pages by looping
     while (nextPageURL) {
       console.log(chalk.cyan(`Retrieving html from ${nextPageURL}`));
+
+      const match = nextPageURL.match(/((?=\/docs).+)$/m);
+
+      let path = match![1];
 
       // Go to the page specified by nextPageURL
       await page.goto(`${nextPageURL}`, {
@@ -124,13 +152,64 @@ export async function generatePDF({
           await utils.openDetails(page);
         }
         // Get the HTML string of the content section.
-        contentHTML += await utils.getHtmlContent(page, contentSelector);
+        let pageHtml = await utils.getHtmlContent(page, contentSelector);
+
+        // Set all the IDs to something unique
+        {
+          // regex modified from utils.generateToc
+          pageHtml = pageHtml.replace(/<h[\d+](.+?)<\/h[\d+]( )*>/g, (header: string) => {
+            const newHeaderId = `${Math.random().toString(36).slice(2, 10)}-${Object.keys(linksToIds).length}`;
+
+            if(headerHasAnId(header)) {
+              const id = headerId(header);
+              linksToIds[`${path}/#${id}`] = `#${newHeaderId}`;
+
+              // taken from utils.replaceHeader
+              header = header.replace(/id\s*=\s*"([^"]*)"/g, `id="${newHeaderId}"`);
+            } else {
+              linksToIds[path] = `#${newHeaderId}`;
+              header = header.replace(/(<h[\d+])/g, `$1 id="${newHeaderId}"`);
+            }
+
+            return header;
+          });
+        }
+
+        // Fix the local links
+        {
+          pageHtml = pageHtml.replace(/<a (.+?)<\/a( )*>/g, (link: string) => {
+            if(basicTextLink(link)) {
+
+              if(localLink(linkDestination(link))) {
+                link = link.replace(/href\s*=\s*"([^"]*)"/g, `href="${linksToIds[`${path}/${linkDestination(link)}`]}"`);
+              }
+            }
+            return link;
+          });
+        }
+
+        contentHTML += pageHtml;
         console.log(chalk.green('Success'));
       }
 
       // Find next page url before DOM operations
       nextPageURL = await utils.findNextUrl(page, paginationSelector);
     }
+  }
+
+  // Fix the non-local links
+  {
+    contentHTML = contentHTML.replace(/<a (.+?)<\/a( )*>/g, (link: string) => {
+      if(basicTextLink(link)) {
+        const destination = linksToIds[linkDestination(link)];
+
+        if(destination) {
+          link = link.replace(/href\s*=\s*"([^"]*)"/g, `href="${destination}"`);
+        }
+      }
+
+      return link;
+    });
   }
 
   console.log(chalk.cyan('Start generating PDF...'));
@@ -152,7 +231,10 @@ export async function generatePDF({
   );
 
   // Generate Toc
-  const { modifiedContentHTML, tocHTML } = utils.generateToc(contentHTML);
+  // const { modifiedContentHTML, tocHTML } = utils.generateToc(contentHTML);
+
+  const modifiedContentHTML = contentHTML;
+  const tocHTML = '';
 
   // Restructuring the HTML of a document
   console.log(chalk.cyan('Restructuring the html of a document...'));
@@ -188,6 +270,7 @@ export async function generatePDF({
 
   // Generate PDF
   console.log(chalk.cyan('Generate PDF...'));
+
   await page.pdf({
     path: outputPDFFilename,
     format: paperFormat,
