@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "tsc --watch",
     "build": "tsc",
+    "install": "tsc",
     "commitlint": "commitlint --from=HEAD~1",
     "prepare": "husky install",
     "lint": "eslint \"*/**/*.{js,ts}\"",
