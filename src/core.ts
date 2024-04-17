@@ -162,7 +162,7 @@ export async function generatePDF({
 
             if(headerHasAnId(header)) {
               const id = headerId(header);
-              linksToIds[`${path}/#${id}`] = `#${newHeaderId}`;
+              linksToIds[`${path}#${id}`] = `#${newHeaderId}`;
 
               // taken from utils.replaceHeader
               header = header.replace(/id\s*=\s*"([^"]*)"/g, `id="${newHeaderId}"`);
@@ -181,7 +181,7 @@ export async function generatePDF({
             if(basicTextLink(link)) {
 
               if(localLink(linkDestination(link))) {
-                link = link.replace(/href\s*=\s*"([^"]*)"/g, `href="${linksToIds[`${path}/${linkDestination(link)}`]}"`);
+                link = link.replace(/href\s*=\s*"([^"]*)"/g, `href="${linksToIds[`${path}${linkDestination(link)}`]}"`);
               }
             }
             return link;
