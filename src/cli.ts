@@ -4,16 +4,18 @@ import * as command from './command';
 
 const program = command.makeProgram();
 
-try {
-  program.parse(process.argv);
-} catch (err) {
-  if (err instanceof Error) {
-    if (program.opts().debug) {
-      console.log(`${err.stack}`);
+export default (args: string[]) => {
+  try {
+    program.parse(args);
+  } catch (err) {
+    if (err instanceof Error) {
+      if (program.opts().debug) {
+        console.log(`${err.stack}`);
+      }
+    } else {
+      throw err;
     }
-  } else {
-    throw err;
+    // Recommended practice for node is set exitcode not force exit
+    process.exitCode = 1;
   }
-  // Recommended practice for node is set exitcode not force exit
-  process.exitCode = 1;
-}
+};
