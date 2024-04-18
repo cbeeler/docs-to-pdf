@@ -4,9 +4,9 @@ import * as command from './command';
 
 const program = command.makeProgram();
 
-export default (args: string[]) => {
+export default async (args: string[]) => {
   try {
-    program.parse(args);
+    await program.parseAsync(args);
   } catch (err) {
     if (err instanceof Error) {
       if (program.opts().debug) {

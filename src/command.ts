@@ -57,21 +57,18 @@ export function makeProgram() {
   docstopdf
     .command('core', { isDefault: true })
     .description("generate PDF from Core's options")
-    .action((options: GeneratePDFOptions) => {
+    .action(async (options: GeneratePDFOptions) => {
       if (options.pdfFormat) {
         console.log(chalk.red('--pdfFormat is deprecated, use --paperFormat'));
         process.exit(1);
       }
       console.debug('Generate from Core');
-      generatePDF(options)
-        .then(() => {
-          console.log(chalk.green('Finish generating PDF!'));
-          process.exit(0);
-        })
-        .catch((err: { stack: unknown }) => {
-          console.error(chalk.red(err.stack));
-          process.exit(1);
-        });
+      try {
+        await generatePDF(options);
+        console.log(chalk.green('Finish generating PDF!'));
+      } catch(err) {
+        throw err;
+      }
     });
 
   docstopdf.commands.forEach((cmd) => {
