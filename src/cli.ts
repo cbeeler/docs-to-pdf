@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import * as command from './command';
+// @ts-ignore
 import { downloadBrowser } from 'puppeteer/lib/esm/puppeteer/node/install';
 
 const program = command.makeProgram();
