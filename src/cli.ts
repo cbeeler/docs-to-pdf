@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 
 import * as command from './command';
+import { downloadBrowser } from 'puppeteer/lib/esm/puppeteer/node/install';
 
 const program = command.makeProgram();
 
 export default async (args: string[]) => {
   try {
+    await downloadBrowser();
     await program.parseAsync(args);
   } catch (err) {
     if (err instanceof Error) {
