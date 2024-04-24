@@ -6,7 +6,7 @@ const program = command.makeProgram();
 
 export default async (args: string[]) => {
   try {
-    await require('puppeteer/lib/cjs/puppeteer/node/install').downloadBrowser();
+    await require('puppeteer/internal/node/install.js').downloadBrowser();
     await program.parseAsync(args);
   } catch (err) {
     if (err instanceof Error) {
