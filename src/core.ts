@@ -30,7 +30,6 @@ const localLink = (link: string) => {
   return link.startsWith('#');
 };
 
-let contentHTML = '';
 export interface GeneratePDFOptions {
   initialDocURLs: Array<string>;
   excludeURLs: Array<string>;
@@ -85,6 +84,7 @@ export async function generatePDF({
   restrictPaths,
   openDetail = true,
 }: GeneratePDFOptions): Promise<void> {
+  let contentHTML = '';
   const execPath = process.env.PUPPETEER_EXECUTABLE_PATH ?? chromeExecPath();
   console.debug(chalk.cyan(`Using Chromium from ${execPath}`));
   const browser = await puppeteer.launch({
