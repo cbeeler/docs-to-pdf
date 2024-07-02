@@ -156,18 +156,23 @@ export async function generatePDF({
 
         // Set all the IDs to something unique
         {
+          const addLinkAndIds = (link: string, id: string) => {
+            linksToIds[link] = id;
+            linksToIds[link.replaceAll('%20', ' ')] = id; // This is needed to handle spaces in filenames
+          };
+
           // regex modified from utils.generateToc
           pageHtml = pageHtml.replace(/<h[\d+](.+?)<\/h[\d+]( )*>/g, (header: string) => {
             const newHeaderId = `${Math.random().toString(36).slice(2, 10)}-${Object.keys(linksToIds).length}`;
 
             if(headerHasAnId(header)) {
               const id = headerId(header);
-              linksToIds[`${path}#${id}`] = `#${newHeaderId}`;
+              addLinkAndIds(`${path}#${id}`, `#${newHeaderId}`);
 
               // taken from utils.replaceHeader
               header = header.replace(/id\s*=\s*"([^"]*)"/g, `id="${newHeaderId}"`);
             } else {
-              linksToIds[path] = `#${newHeaderId}`;
+              addLinkAndIds(path, `#${newHeaderId}`);
               header = header.replace(/(<h[\d+])/g, `$1 id="${newHeaderId}"`);
             }
 
